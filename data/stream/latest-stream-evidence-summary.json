@@ -1,0 +1,10 @@
+{
+  "source": "solana_ws",
+  "requested_count": 25,
+  "captured_count": 25,
+  "first_slot": 414507813,
+  "last_slot": 414507836,
+  "unique_leader_count": 7,
+  "started_at": "2026-06-10T21:40:50.092Z",
+  "finished_at": "2026-06-10T21:41:15.843Z"
+}

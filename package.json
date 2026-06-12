@@ -1,0 +1,55 @@
+{
+  "name": "solana-tx-sentinel",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Solana transaction reliability stack for monitoring, submission, and lifecycle intelligence.",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/index.js",
+    "test": "vitest run",
+    "config:final": "tsx src/scripts/print-final-config.ts",
+    "check:rpc": "tsx src/scripts/check-rpc.ts",
+    "check:balance": "tsx src/scripts/check-balance.ts",
+    "wallet:create": "tsx src/scripts/create-wallet.ts",
+    "airdrop:devnet": "tsx src/scripts/airdrop-devnet.ts",
+    "tx:test": "tsx src/scripts/send-test-transfer.ts",
+    "fault:expired-blockhash": "tsx src/scripts/fault-expired-blockhash.ts",
+    "agent:diagnose": "tsx src/scripts/agent-diagnose-failure.ts",
+    "demo:retry": "tsx src/scripts/demo-autonomous-retry.ts",
+    "watch:slots": "tsx src/scripts/watch-slots.ts",
+    "watch:leaders": "tsx src/scripts/watch-leaders.ts",
+    "stream:capture": "tsx src/scripts/capture-stream-evidence.ts",
+    "leaders:learn-jito": "tsx src/scripts/learn-jito-leaders.ts",
+    "check:submission-window": "tsx src/scripts/check-submission-window.ts",
+    "check:jito": "tsx src/scripts/check-jito.ts",
+    "check:tip": "tsx src/scripts/check-tip.ts",
+    "bundle:preview": "tsx src/scripts/preview-bundle.ts",
+    "bundle:send": "tsx src/scripts/send-bundle.ts",
+    "bundle:fault-expired": "tsx src/scripts/bundle-fault-expired-blockhash.ts",
+    "bundle:fault-compute": "tsx src/scripts/bundle-fault-compute-exceeded.ts",
+    "bundle:fault-invalid-tip": "tsx src/scripts/bundle-fault-invalid-tip-account.ts",
+    "evidence:bundles": "tsx src/scripts/run-bundle-evidence.ts",
+    "evidence:audit": "tsx src/scripts/audit-bundle-logs.ts",
+    "report:evidence": "tsx src/scripts/generate-evidence-report.ts"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "@solana/web3.js": "^1.98.4",
+    "@triton-one/yellowstone-grpc": "^5.0.9",
+    "bs58": "^6.0.0",
+    "dotenv": "^16.4.7",
+    "pino": "^9.5.0",
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2",
+    "vitest": "^2.1.8"
+  },
+  "packageManager": "pnpm@9.15.0"
+}
