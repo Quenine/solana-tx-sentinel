@@ -1,7 +1,7 @@
 export type SlotUpdate = {
   slot: number;
-  parent?: number;
-  root?: number;
+  parent?: number | null;
+  root?: number | null;
   timestamp_ms: number;
   observed_at: string;
   source: "solana_ws" | "yellowstone";

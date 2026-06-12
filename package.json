@@ -21,6 +21,7 @@
     "watch:slots": "tsx src/scripts/watch-slots.ts",
     "watch:leaders": "tsx src/scripts/watch-leaders.ts",
     "stream:capture": "tsx src/scripts/capture-stream-evidence.ts",
+    "yellowstone:probe": "tsx src/scripts/probe-yellowstone.ts",
     "leaders:learn-jito": "tsx src/scripts/learn-jito-leaders.ts",
     "check:submission-window": "tsx src/scripts/check-submission-window.ts",
     "check:jito": "tsx src/scripts/check-jito.ts",

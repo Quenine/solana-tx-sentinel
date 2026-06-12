@@ -110,6 +110,8 @@ STREAM_RECONNECT_BACKOFF_MS=1000
 
 For local development, set `SLOT_STREAM_SOURCE=solana_ws`. `pnpm stream:capture` writes stream evidence to `data/stream/slot-stream-evidence.jsonl` and `data/stream/latest-stream-evidence-summary.json`. The report should only be read as Yellowstone evidence when the summary file has `"source": "yellowstone"`.
 
+Use `pnpm yellowstone:probe` to test the configured Yellowstone endpoint and subscription request without writing evidence files. The probe prints the endpoint and gRPC errors, but never prints the token.
+
 ## Important Implementation Note
 
 The bundle status poller does not treat the first inflight `Invalid` response as terminal. It keeps polling both inflight and final bundle status until `Landed`, final status confirmation, or timeout. This matters because the successful final evidence session showed bundle status can move from early `Invalid` or `Pending` observations to `Landed`.
