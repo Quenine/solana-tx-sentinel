@@ -1,21 +1,31 @@
+import { readFile } from "node:fs/promises";
+
 import type { SubscribeUpdate } from "@triton-one/yellowstone-grpc";
 
 import { getEnv } from "../config/env.js";
 import {
+  buildSlotSubscribeRequests,
   formatYellowstoneError,
   loadYellowstoneClient,
   normalizeYellowstoneEndpoint,
+  type YellowstoneClient,
+  type YellowstoneClientConstructor,
   type YellowstoneStream,
-  writeFirstAcceptedRequest
+  writeSlotSubscribeRequest,
+  yellowstoneEndpointVariants
 } from "../streaming/yellowstone-slot-stream.js";
 
-type ProbeStream = {
-  on(event: "data", listener: (update: SubscribeUpdate) => void): ProbeStream;
-  on(event: "error", listener: (error: Error) => void): ProbeStream;
-  on(event: "end", listener: () => void): ProbeStream;
-  on(event: "close", listener: () => void): ProbeStream;
-  destroy(): void;
-};
+type Stage =
+  | "client construction"
+  | "client connect"
+  | "getVersion"
+  | "subscribe open"
+  | "request write"
+  | "waiting for first data";
+
+type ProbeResult = "received_data" | "timeout" | "stream_error" | "closed";
+
+const firstDataTimeoutMs = 15_000;
 
 function hasSlot(update: SubscribeUpdate): boolean {
   const value = update as unknown as { slot?: { slot?: unknown } };
@@ -23,71 +33,123 @@ function hasSlot(update: SubscribeUpdate): boolean {
   return value.slot?.slot !== undefined;
 }
 
-async function main(): Promise<void> {
-  const env = getEnv();
-  const endpoint = normalizeYellowstoneEndpoint(env.YELLOWSTONE_GRPC_ENDPOINT);
+async function packageVersion(): Promise<string> {
+  try {
+    const raw = await readFile("node_modules/@triton-one/yellowstone-grpc/package.json", "utf8");
+    const parsed = JSON.parse(raw) as { version?: unknown };
 
-  console.log(`Yellowstone endpoint: ${endpoint}`);
+    return typeof parsed.version === "string" ? parsed.version : "not available";
+  } catch {
+    return "not available";
+  }
+}
 
-  const Client = await loadYellowstoneClient();
-  const client = new Client(
-    endpoint,
-    env.YELLOWSTONE_GRPC_TOKEN.trim().length === 0 ? undefined : env.YELLOWSTONE_GRPC_TOKEN,
-    {},
-    {
+function stageError(stage: Stage, error: unknown): void {
+  console.error(`stage=${stage}`);
+  console.error(formatYellowstoneError("yellowstone probe error", error));
+}
+
+async function constructClient(
+  Client: YellowstoneClientConstructor,
+  endpoint: string,
+  token: string,
+  reconnectBackoffMs: number,
+  reconnectMaxAttempts: number
+): Promise<YellowstoneClient | null> {
+  try {
+    return new Client(endpoint, token.trim().length === 0 ? undefined : token, {}, {
       enabled: true,
       backoff: {
-        initialIntervalMs: env.STREAM_RECONNECT_BACKOFF_MS,
-        maxRetries: env.STREAM_RECONNECT_MAX_ATTEMPTS
+        initialIntervalMs: reconnectBackoffMs,
+        maxRetries: reconnectMaxAttempts
       }
-    }
-  );
+    });
+  } catch (error) {
+    stageError("client construction", error);
+    return null;
+  }
+}
 
-  if (client.connect) {
+async function connectClient(client: YellowstoneClient): Promise<boolean> {
+  if (!client.connect) {
+    console.log("client.connect: not available");
+    return true;
+  }
+
+  try {
     await client.connect();
+    console.log("client.connect: ok");
+    return true;
+  } catch (error) {
+    stageError("client connect", error);
+    return false;
+  }
+}
+
+async function callGetVersion(client: YellowstoneClient): Promise<boolean> {
+  if (!client.getVersion) {
+    console.log("getVersion: not available");
+    return false;
   }
 
-  if (client.getVersion) {
-    try {
-      const version = await client.getVersion();
-      console.log(`getVersion: ${JSON.stringify(version)}`);
-    } catch (error) {
-      console.error(formatYellowstoneError("getVersion failed", error));
+  try {
+    const version = await client.getVersion();
+    console.log(`getVersion: ok ${JSON.stringify(version)}`);
+    return true;
+  } catch (error) {
+    stageError("getVersion", error);
+    return false;
+  }
+}
+
+async function openStream(client: YellowstoneClient, getVersionSucceeded: boolean): Promise<YellowstoneStream | null> {
+  try {
+    const stream = await client.subscribe();
+    console.log("subscribe open: ok");
+    return stream;
+  } catch (error) {
+    stageError("subscribe open", error);
+
+    if (getVersionSucceeded) {
+      console.error("Likely stream permission/access issue or provider-side stream setup issue.");
     }
+
+    return null;
   }
+}
 
-  const stream = (await client.subscribe()) as YellowstoneStream & ProbeStream;
-  let settled = false;
+async function waitForFirstSlot(stream: YellowstoneStream): Promise<ProbeResult> {
+  return await new Promise<ProbeResult>((resolve) => {
+    let settled = false;
 
-  await new Promise<void>((resolve, reject) => {
-    const finish = (error?: Error): void => {
+    const finish = (result: ProbeResult): void => {
       if (settled) {
         return;
       }
 
       settled = true;
+      clearTimeout(timeout);
       stream.destroy();
-
-      if (error) {
-        reject(error);
-        return;
-      }
-
-      resolve();
+      resolve(result);
     };
 
-    stream.on("data", (update) => {
+    const timeout = setTimeout(() => {
+      console.error("Stream opened but no slot updates received.");
+      finish("timeout");
+    }, firstDataTimeoutMs);
+
+    stream.on("data", (update: SubscribeUpdate) => {
       if (!hasSlot(update)) {
         return;
       }
 
       console.log(`first slot update: ${JSON.stringify(update.slot)}`);
-      finish();
+      finish("received_data");
     });
 
-    stream.on("error", (error) => {
-      console.error(formatYellowstoneError("subscribe stream error", error));
-      finish(error);
+    stream.on("error", (error: Error) => {
+      stageError("waiting for first data", error);
+      finish("stream_error");
     });
 
     stream.on("end", () => {
@@ -96,21 +158,129 @@ async function main(): Promise<void> {
 
     stream.on("close", () => {
       if (!settled) {
-        finish(new Error("subscribe stream closed before first slot update"));
+        console.error("subscribe stream closed before first slot update");
+        finish("closed");
       }
     });
-
-    void writeFirstAcceptedRequest(stream, env.YELLOWSTONE_COMMITMENT)
-      .then((shape) => {
-        console.log(`subscription request shape accepted: ${shape}`);
-      })
-      .catch((error: unknown) => {
-        console.error(formatYellowstoneError("subscription request failed", error));
-        finish(error instanceof Error ? error : new Error(String(error)));
-      });
   });
+}
 
-  console.log("Yellowstone probe received a real slot update.");
+async function tryShape(
+  Client: YellowstoneClientConstructor,
+  endpoint: string,
+  token: string,
+  reconnectBackoffMs: number,
+  reconnectMaxAttempts: number,
+  getVersionSucceeded: boolean,
+  shapeIndex: number
+): Promise<boolean> {
+  const shape = buildSlotSubscribeRequests("processed")[shapeIndex];
+
+  if (!shape) {
+    return false;
+  }
+
+  console.log(`request shape ${shape.name}: start`);
+
+  const client = await constructClient(Client, endpoint, token, reconnectBackoffMs, reconnectMaxAttempts);
+
+  if (!client) {
+    return false;
+  }
+
+  const connected = await connectClient(client);
+
+  if (!connected) {
+    return false;
+  }
+
+  const stream = await openStream(client, getVersionSucceeded);
+
+  if (!stream) {
+    return false;
+  }
+
+  try {
+    await writeSlotSubscribeRequest(stream, shape);
+    console.log(`request shape ${shape.name}: write ok`);
+  } catch (error) {
+    stageError("request write", error);
+    console.error("Likely request shape/protobuf mismatch.");
+    stream.destroy();
+    return false;
+  }
+
+  const result = await waitForFirstSlot(stream);
+
+  return result === "received_data";
+}
+
+async function tryEndpoint(
+  Client: YellowstoneClientConstructor,
+  endpoint: string,
+  token: string,
+  reconnectBackoffMs: number,
+  reconnectMaxAttempts: number
+): Promise<boolean> {
+  console.log("");
+  console.log(`endpoint variant: ${endpoint}`);
+
+  const client = await constructClient(Client, endpoint, token, reconnectBackoffMs, reconnectMaxAttempts);
+
+  if (!client) {
+    return false;
+  }
+
+  const connected = await connectClient(client);
+
+  if (!connected) {
+    return false;
+  }
+
+  const getVersionSucceeded = await callGetVersion(client);
+
+  for (const shapeIndex of [0, 1, 2]) {
+    const ok = await tryShape(Client, endpoint, token, reconnectBackoffMs, reconnectMaxAttempts, getVersionSucceeded, shapeIndex);
+
+    if (ok) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+async function main(): Promise<void> {
+  const env = getEnv();
+  const tokenLength = env.YELLOWSTONE_GRPC_TOKEN.length;
+  const endpoint = env.YELLOWSTONE_GRPC_ENDPOINT;
+  const normalizedEndpoint = normalizeYellowstoneEndpoint(endpoint);
+
+  console.log(`endpoint: ${endpoint}`);
+  console.log(`normalized_endpoint: ${normalizedEndpoint}`);
+  console.log(`package_version: ${await packageVersion()}`);
+  console.log(`token_present: ${tokenLength > 0}`);
+  console.log(`token_length: ${tokenLength}`);
+
+  const Client = await loadYellowstoneClient();
+  const endpoints = yellowstoneEndpointVariants(endpoint);
+
+  for (const candidateEndpoint of endpoints) {
+    const ok = await tryEndpoint(
+      Client,
+      candidateEndpoint,
+      env.YELLOWSTONE_GRPC_TOKEN,
+      env.STREAM_RECONNECT_BACKOFF_MS,
+      env.STREAM_RECONNECT_MAX_ATTEMPTS
+    );
+
+    if (ok) {
+      console.log("Yellowstone probe received a real slot update.");
+      return;
+    }
+  }
+
+  throw new Error("Yellowstone probe did not receive a slot update from any endpoint/request-shape combination.");
 }
 
 main().catch((error: unknown) => {

@@ -65,9 +65,24 @@ export function normalizeYellowstoneEndpoint(endpoint: string): string {
   return `https://${trimmed}`;
 }
 
+export function yellowstoneEndpointVariants(endpoint: string): string[] {
+  const trimmed = endpoint.trim();
+  const variants = [trimmed];
+
+  if (trimmed.startsWith("https://")) {
+    variants.push(trimmed.slice("https://".length));
+  } else if (trimmed.startsWith("http://")) {
+    variants.push(trimmed.slice("http://".length));
+  } else if (trimmed.length > 0) {
+    variants.push(`https://${trimmed}`);
+  }
+
+  return [...new Set(variants.filter((value) => value.length > 0))];
+}
+
 export function formatYellowstoneError(prefix: string, error: unknown): string {
   if (!(error instanceof Error)) {
-    return `${prefix}: ${String(error)}`;
+    return `${prefix}: ${safeJson(error)}`;
   }
 
   const grpcError = error as YellowstoneError;
@@ -84,6 +99,12 @@ export function formatYellowstoneError(prefix: string, error: unknown): string {
   if (grpcError.metadata !== undefined) {
     parts.push(`metadata=${safeJson(grpcError.metadata)}`);
   }
+
+  if (grpcError.stack) {
+    parts.push(`stack=${grpcError.stack}`);
+  }
+
+  parts.push(`raw=${safeJson(error)}`);
 
   if (grpcError.code === 16 || /unauthenticated/i.test(grpcError.message) || /unauthenticated/i.test(grpcError.details ?? "")) {
     parts.push("authentication failed; check YELLOWSTONE_GRPC_TOKEN");
@@ -149,6 +170,19 @@ function slotStatusName(value: unknown): string {
 
 function safeJson(value: unknown): string {
   try {
+    if (value instanceof Error) {
+      const error = value as YellowstoneError;
+
+      return JSON.stringify({
+        name: error.name,
+        message: error.message,
+        code: error.code,
+        details: error.details,
+        metadata: error.metadata,
+        stack: error.stack
+      });
+    }
+
     return JSON.stringify(value);
   } catch {
     return String(value);
@@ -170,7 +204,7 @@ type SlotRequestShape = {
   request: SubscribeRequest;
 };
 
-export function buildSlotSubscribeRequests(commitment: YellowstoneCommitment): SlotRequestShape[] {
+export function buildSlotSubscribeRequests(commitment: YellowstoneCommitment = "processed"): SlotRequestShape[] {
   const base = {
     accounts: {},
     transactions: {},
@@ -271,7 +305,7 @@ function toSlotUpdate(update: SubscribeUpdate, droppedEvents: number): SlotUpdat
   };
 }
 
-async function writeRequest(stream: YellowstoneStream, shape: SlotRequestShape): Promise<void> {
+export async function writeSlotSubscribeRequest(stream: YellowstoneStream, shape: SlotRequestShape): Promise<void> {
   await new Promise<void>((resolve, reject) => {
     try {
       stream.write(shape.request, (error?: Error | null) => {
@@ -296,7 +330,7 @@ export async function writeFirstAcceptedRequest(
 
   for (const shape of buildSlotSubscribeRequests(commitment)) {
     try {
-      await writeRequest(stream, shape);
+      await writeSlotSubscribeRequest(stream, shape);
       return shape.name;
     } catch (error) {
       failures.push(`${shape.name}: ${formatYellowstoneError("subscription request write failed", error)}`);
@@ -349,50 +383,71 @@ export class YellowstoneSlotStream implements SlotStream {
 
     const endpoint = normalizeYellowstoneEndpoint(this.options.endpoint);
     const Client = await loadYellowstoneClient();
-    const client = new Client(
-      endpoint,
-      looksMissing(this.options.token) ? undefined : this.options.token,
-      {},
-      {
-        enabled: true,
-        backoff: {
-          initialIntervalMs: this.options.reconnectBackoffMs,
-          maxRetries: this.options.reconnectMaxAttempts
-        }
-      }
-    );
-    this.client = client;
+    let client: YellowstoneClient;
 
     try {
-      if (client.connect) {
-        await client.connect();
-      }
-
-      const stream = await client.subscribe();
-      this.stream = stream;
-
-      stream.on("data", (update: SubscribeUpdate) => {
-        this.enqueue(update, onSlot);
-      });
-
-      stream.on("error", (error: Error) => {
-        console.error(formatYellowstoneError("Yellowstone slot stream error", error));
-      });
-
-      stream.on("end", () => {
-        console.error("Yellowstone slot stream ended.");
-      });
-
-      stream.on("close", () => {
-        if (!this.stopping) {
-          void this.reconnect(onSlot, attempt + 1);
+      client = new Client(
+        endpoint,
+        looksMissing(this.options.token) ? undefined : this.options.token,
+        {},
+        {
+          enabled: true,
+          backoff: {
+            initialIntervalMs: this.options.reconnectBackoffMs,
+            maxRetries: this.options.reconnectMaxAttempts
+          }
         }
-      });
+      );
+    } catch (error) {
+      throw new Error(formatYellowstoneError("Yellowstone client construction failed", error));
+    }
 
+    this.client = client;
+
+    if (client.connect) {
+      try {
+        await client.connect();
+      } catch (error) {
+        throw new Error(formatYellowstoneError("Yellowstone client connect failed", error));
+      }
+    }
+
+    let stream: YellowstoneStream;
+
+    try {
+      stream = await client.subscribe();
+      this.stream = stream;
+    } catch (error) {
+      throw new Error(
+        `${formatYellowstoneError("Yellowstone subscribe open failed", error)} Likely stream permission/access issue or provider-side stream setup issue.`
+      );
+    }
+
+    stream.on("data", (update: SubscribeUpdate) => {
+      this.enqueue(update, onSlot);
+    });
+
+    stream.on("error", (error: Error) => {
+      console.error(formatYellowstoneError("Yellowstone slot stream error", error));
+    });
+
+    stream.on("end", () => {
+      console.error("Yellowstone slot stream ended.");
+    });
+
+    stream.on("close", () => {
+      if (!this.stopping) {
+        void this.reconnect(onSlot, attempt + 1);
+      }
+    });
+
+    try {
       const shape = await writeFirstAcceptedRequest(stream, this.options.commitment);
       console.error(`Yellowstone slot subscription active endpoint=${endpoint} request_shape=${shape}`);
     } catch (error) {
-      throw new Error(formatYellowstoneError("Yellowstone subscribe setup failed", error));
+      throw new Error(
+        `${formatYellowstoneError("Yellowstone subscription request write failed", error)} Likely request shape/protobuf mismatch.`
+      );
     }
   }
 
