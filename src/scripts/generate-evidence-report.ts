@@ -79,6 +79,7 @@ type AgentDecision = {
 
 type StreamEvidenceSummary = {
   source?: string;
+  transport?: string | null;
   requested_count?: number;
   captured_count?: number;
   first_slot?: number | null;
@@ -431,13 +432,17 @@ function streamEvidenceSummary(summary: StreamEvidenceSummary | null): string {
 
   return [
     `- Source: ${display(summary.source)}`,
+    `- Transport: ${display(summary.transport)}`,
     `- Requested count: ${display(summary.requested_count)}`,
     `- Captured count: ${display(summary.captured_count)}`,
     `- First slot: ${display(summary.first_slot)}`,
     `- Last slot: ${display(summary.last_slot)}`,
     `- Unique leader count: ${display(summary.unique_leader_count)}`,
     `- Started at: ${display(summary.started_at)}`,
-    `- Finished at: ${display(summary.finished_at)}`
+    `- Finished at: ${display(summary.finished_at)}`,
+    ...(summary.source === "yellowstone" && summary.transport === "grpcurl"
+      ? ["- Note: Captured through grpcurl against geyser.Geyser/Subscribe using Solinfra Yellowstone gRPC."]
+      : [])
   ].join("\n");
 }
 
@@ -491,7 +496,7 @@ function renderReport(input: {
     `- Minimum tip: ${display(summary?.tip_lamports_min)} lamports`,
     `- Maximum tip: ${display(summary?.tip_lamports_max)} lamports`,
     "",
-    "## Stream Evidence Summary",
+    "## Live Slot Stream Evidence",
     "",
     streamEvidenceSummary(input.streamSummary),
     "",

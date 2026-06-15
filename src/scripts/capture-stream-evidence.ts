@@ -14,17 +14,20 @@ const summaryPath = "data/stream/latest-stream-evidence-summary.json";
 
 type StreamEvidenceEntry = {
   source: SlotUpdate["source"];
+  transport: SlotUpdate["transport"] | null;
   slot: number;
   parent: number | null;
   root: number | null;
   leader: string | null;
   observed_at: string;
+  provider_created_at?: string | null;
   timestamp_ms: number;
   debug?: SlotUpdate["debug"];
 };
 
 type StreamEvidenceSummary = {
   source: SlotUpdate["source"];
+  transport: SlotUpdate["transport"] | null;
   requested_count: number;
   captured_count: number;
   first_slot: number | null;
@@ -72,11 +75,13 @@ async function main(): Promise<void> {
         const leader = getLeaderForSlot(schedule, update.slot) ?? null;
         const entry: StreamEvidenceEntry = {
           source: update.source,
+          transport: update.transport ?? null,
           slot: update.slot,
           parent: update.parent ?? null,
           root: update.root ?? null,
           leader,
           observed_at: update.observed_at,
+          ...(update.provider_created_at === undefined ? {} : { provider_created_at: update.provider_created_at }),
           timestamp_ms: update.timestamp_ms,
           ...(update.debug === undefined ? {} : { debug: update.debug })
         };
@@ -93,6 +98,13 @@ async function main(): Promise<void> {
           resolved = true;
           void stream.stop().then(resolve).catch(reject);
         }
+      }, (error) => {
+        if (resolved) {
+          return;
+        }
+
+        resolved = true;
+        reject(error);
       })
       .catch(reject);
   });
@@ -101,7 +113,8 @@ async function main(): Promise<void> {
 
   const finishedAt = new Date().toISOString();
   const summary: StreamEvidenceSummary = {
-    source: env.SLOT_STREAM_SOURCE,
+    source: entries[0]?.source ?? (env.SLOT_STREAM_SOURCE === "solana_ws" ? "solana_ws" : "yellowstone"),
+    transport: entries[0]?.transport ?? null,
     requested_count: requestedCount,
     captured_count: entries.length,
     first_slot: entries[0]?.slot ?? null,

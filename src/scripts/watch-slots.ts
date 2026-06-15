@@ -8,8 +8,9 @@ import { defaultCommitment } from "../types/solana.js";
 function formatSlot(update: SlotUpdate): string {
   const parent = update.parent === undefined ? "n/a" : update.parent;
   const root = update.root === undefined ? "n/a" : update.root;
+  const transport = update.transport === undefined ? "" : ` transport=${update.transport}`;
 
-  return `[slot] ${update.slot} parent=${parent} root=${root} source=${update.source}`;
+  return `[slot] ${update.slot} parent=${parent} root=${root} source=${update.source}${transport}`;
 }
 
 async function main(): Promise<void> {

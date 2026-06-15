@@ -4,7 +4,7 @@ import { z } from "zod";
 
 const networkSchema = z.enum(["devnet", "testnet", "mainnet-beta"]);
 const logLevelSchema = z.enum(["trace", "debug", "info", "warn", "error", "fatal", "silent"]);
-const slotStreamSourceSchema = z.enum(["solana_ws", "yellowstone"]);
+const slotStreamSourceSchema = z.enum(["solana_ws", "yellowstone", "yellowstone_grpcurl"]);
 const yellowstoneCommitmentSchema = z.enum(["processed", "confirmed", "finalized"]);
 const bundleLayoutSchema = z.enum(["combined_tip_instruction", "separate_tip_tx"]);
 const evidenceProfileSchema = z.enum(["final"]);

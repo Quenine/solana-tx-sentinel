@@ -8,8 +8,9 @@ import { defaultCommitment } from "../types/solana.js";
 
 function formatLeaderSlot(update: SlotUpdate, leader: string | undefined): string {
   const root = update.root === undefined ? "n/a" : update.root;
+  const transport = update.transport === undefined ? "" : ` transport=${update.transport}`;
 
-  return `[slot] ${update.slot} leader=${leader ?? "unknown"} root=${root} source=${update.source}`;
+  return `[slot] ${update.slot} leader=${leader ?? "unknown"} root=${root} source=${update.source}${transport}`;
 }
 
 async function main(): Promise<void> {

@@ -20,5 +20,15 @@ export async function createSlotStream(connection: Connection, env: Env): Promis
         reconnectBackoffMs: env.STREAM_RECONNECT_BACKOFF_MS
       });
     }
+
+    case "yellowstone_grpcurl": {
+      const { YellowstoneGrpcurlSlotStream } = await import("./yellowstone-grpcurl-slot-stream.js");
+
+      return new YellowstoneGrpcurlSlotStream({
+        endpoint: env.YELLOWSTONE_GRPC_ENDPOINT,
+        token: env.YELLOWSTONE_GRPC_TOKEN,
+        commitment: env.YELLOWSTONE_COMMITMENT
+      });
+    }
   }
 }

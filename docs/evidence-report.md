@@ -1,6 +1,6 @@
 # Solana Tx Sentinel Evidence Report
 
-Generated at: 2026-06-10T19:00:15.766Z
+Generated at: 2026-06-15T22:38:02.504Z
 
 ## Evidence Session
 
@@ -47,16 +47,17 @@ Generated at: 2026-06-10T19:00:15.766Z
 - Minimum tip: 100000 lamports
 - Maximum tip: 100000 lamports
 
-## Stream Evidence Summary
+## Live Slot Stream Evidence
 
 - Source: solana_ws
+- Transport: not available
 - Requested count: 25
 - Captured count: 25
-- First slot: 414482363
-- Last slot: 414482387
+- First slot: 414507813
+- Last slot: 414507836
 - Unique leader count: 7
-- Started at: 2026-06-10T18:58:50.166Z
-- Finished at: 2026-06-10T18:59:07.166Z
+- Started at: 2026-06-10T21:40:50.092Z
+- Finished at: 2026-06-10T21:41:15.843Z
 
 ## Failure Evidence Summary
 

@@ -96,10 +96,22 @@ STOP_ON_FIRST_INVALID=false
 
 ## Stream Source Configuration
 
-Yellowstone/Geyser is the preferred competition path for live slot evidence. Configure it when provider credentials are available:
+Yellowstone/Geyser is the preferred competition path for live slot evidence. The project supports two Yellowstone transports:
+
+- `SLOT_STREAM_SOURCE=yellowstone`: native `@triton-one/yellowstone-grpc` client. `getVersion` works against Solinfra, but native subscribe may be provider/runtime sensitive.
+- `SLOT_STREAM_SOURCE=yellowstone_grpcurl`: `grpcurl` transport against the real `geyser.Geyser/Subscribe` stream. This is useful when the native client subscribe path is unstable.
+
+Install `grpcurl` for the grpcurl transport:
+
+```bash
+go install github.com/fullstorydev/grpcurl/cmd/grpcurl@latest
+export PATH="$PATH:$HOME/go/bin"
+```
+
+Configure Yellowstone when provider credentials are available:
 
 ```text
-SLOT_STREAM_SOURCE=yellowstone
+SLOT_STREAM_SOURCE=yellowstone_grpcurl
 YELLOWSTONE_GRPC_ENDPOINT=https://your-yellowstone-endpoint
 YELLOWSTONE_GRPC_TOKEN=your-token
 YELLOWSTONE_COMMITMENT=processed
@@ -108,7 +120,9 @@ STREAM_RECONNECT_MAX_ATTEMPTS=5
 STREAM_RECONNECT_BACKOFF_MS=1000
 ```
 
-For local development, set `SLOT_STREAM_SOURCE=solana_ws`. `pnpm stream:capture` writes stream evidence to `data/stream/slot-stream-evidence.jsonl` and `data/stream/latest-stream-evidence-summary.json`. The report should only be read as Yellowstone evidence when the summary file has `"source": "yellowstone"`.
+Both Yellowstone modes connect to real Yellowstone/Geyser infrastructure. `yellowstone_grpcurl` uses `grpcurl -H "x-token: <token>" ... geyser.Geyser/Subscribe`; the token is not logged. For local development, set `SLOT_STREAM_SOURCE=solana_ws`.
+
+`pnpm stream:capture` writes stream evidence to `data/stream/slot-stream-evidence.jsonl` and `data/stream/latest-stream-evidence-summary.json`. The report should only be read as Yellowstone evidence when the summary has `"source": "yellowstone"`. If the summary has `"transport": "grpcurl"`, the stream was captured through grpcurl rather than the native Node client.
 
 Use `pnpm yellowstone:probe` to test the configured Yellowstone endpoint and subscription request without writing evidence files. The probe prints the endpoint and gRPC errors, but never prints the token.
 
@@ -147,7 +161,7 @@ Failure Classifier -> Scored Reasoning Agent -> Recovery Runner
 ## Limitations
 
 - Testnet Block Engine behavior may differ from mainnet.
-- Yellowstone/Geyser streaming requires provider credentials. Without them, the project uses `solana_ws` fallback evidence for local development.
+- Yellowstone/Geyser streaming requires provider credentials. The native client subscribe path is not claimed as landed evidence unless captured logs show `source=yellowstone`; `yellowstone_grpcurl` is available for providers where native subscribe is unstable.
 - This project does not claim MEV strategy profitability; it focuses on reliability, observability, and recovery.
 
 ## License
