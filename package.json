@@ -33,7 +33,8 @@
     "bundle:fault-invalid-tip": "tsx src/scripts/bundle-fault-invalid-tip-account.ts",
     "evidence:bundles": "tsx src/scripts/run-bundle-evidence.ts",
     "evidence:audit": "tsx src/scripts/audit-bundle-logs.ts",
-    "report:evidence": "tsx src/scripts/generate-evidence-report.ts"
+    "report:evidence": "tsx src/scripts/generate-evidence-report.ts",
+    "report:compliance": "tsx src/scripts/generate-compliance-audit.ts"
   },
   "engines": {
     "node": ">=20"
