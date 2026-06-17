@@ -47,7 +47,6 @@ Solana Tx Sentinel is an AI-assisted Solana transaction reliability stack for Ji
 - `data/lifecycle/jito-bundles.jsonl`
 - `data/lifecycle/jito-bundle-failures.jsonl`
 - `data/lifecycle/autonomous-recovery.jsonl`
-- `data/lifecycle/devnet-failures.jsonl`
 - `data/lifecycle/agent-decisions.jsonl`
 - `data/lifecycle/observed-jito-leaders.json`
 - `data/stream/slot-stream-evidence.jsonl`
