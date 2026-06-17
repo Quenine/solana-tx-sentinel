@@ -34,7 +34,8 @@
     "evidence:bundles": "tsx src/scripts/run-bundle-evidence.ts",
     "evidence:audit": "tsx src/scripts/audit-bundle-logs.ts",
     "report:evidence": "tsx src/scripts/generate-evidence-report.ts",
-    "report:compliance": "tsx src/scripts/generate-compliance-audit.ts"
+    "report:compliance": "tsx src/scripts/generate-compliance-audit.ts",
+    "report:dashboard": "tsx src/scripts/generate-dashboard.ts"
   },
   "engines": {
     "node": ">=20"
