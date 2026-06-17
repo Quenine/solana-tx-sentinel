@@ -1,0 +1,28 @@
+{
+  "generated_at": "2026-06-08T07:41:37.908Z",
+  "source_path": "data/lifecycle/jito-bundles.jsonl",
+  "observed_leader_count": 2,
+  "unresolved_landed_slot_count": 0,
+  "leaders": [
+    {
+      "leader": "FT9QgTVo375TgDAQusTgpsfXqTosCJLfrBpoVdcbnhtS",
+      "landing_count": 2,
+      "landed_slots": [
+        413837624,
+        413838760
+      ],
+      "first_seen_at": "2026-06-07T22:42:13.115Z",
+      "last_seen_at": "2026-06-07T22:49:30.718Z"
+    },
+    {
+      "leader": "SPHEREzwNn9rrmr4v5sexgAuKK1v4ddDPkF48mxTk4Z",
+      "landing_count": 1,
+      "landed_slots": [
+        413830101
+      ],
+      "first_seen_at": "2026-06-07T21:53:50.710Z",
+      "last_seen_at": "2026-06-07T21:53:50.710Z"
+    }
+  ],
+  "notes": []
+}
