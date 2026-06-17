@@ -48,8 +48,11 @@ Generated at: 2026-06-17T20:49:22.863Z
 - Native Yellowstone client subscribe was unstable, so real Yellowstone evidence was captured through grpcurl against geyser.Geyser/Subscribe.
 - No MEV/profitability claim is made.
 
-## Next Actions
+## Final Submission Checklist
 
-- Final README polish.
-- Final demo walkthrough.
-- Final submission checklist.
+- GitHub repository is public.
+- Public architecture document is linked.
+- Evidence report is generated.
+- Compliance audit is generated.
+- Dashboard is generated.
+- Final lifecycle evidence files are committed.
