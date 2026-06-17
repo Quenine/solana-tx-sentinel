@@ -62,7 +62,7 @@ Generated at: 2026-06-17T20:49:22.151Z
 
 ## Failure Evidence Summary
 
-- Expired blockhash fault injection: not available
+- Expired blockhash evidence: recorded in controlled Jito bundle failure evidence as expired_blockhash_bundle.
 - Autonomous retry recovery: recovered recorded at 2026-06-06T20:56:12.100Z.
 - Bundle failure classification: none recorded in the selected final evidence session.
 
