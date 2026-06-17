@@ -42,7 +42,7 @@ Generated at: 2026-06-17T20:49:22.863Z
 - data/stream/latest-stream-evidence-summary.json: latest live stream summary; source=yellowstone, transport=grpcurl, captured_count=25.
 - data/stream/slot-stream-evidence.jsonl: raw live slot stream evidence; entries=75.
 
-## Known Risks
+## Known Constraints
 
 - Final Jito bundle evidence was collected on Jito testnet; organizer confirmation may be useful if they strictly require devnet/mainnet.
 - Native Yellowstone client subscribe was unstable, so real Yellowstone evidence was captured through grpcurl against geyser.Geyser/Subscribe.
