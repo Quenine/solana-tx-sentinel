@@ -32,6 +32,14 @@ Solana Tx Sentinel is an AI-assisted Solana transaction reliability stack for Ji
 - Average submitted to confirmed: `7237 ms`
 - Average submitted to finalized: `15734 ms`
 
+## Final Evidence / Submission Links
+
+- GitHub repository: https://github.com/Quenine/solana-tx-sentinel
+- Architecture document: https://docs.google.com/document/d/1QQVLHkuINdQD3P4VSvLwluTAsynqgvGEfPt_vcSL5LI/edit?usp=sharing
+- Evidence dashboard: `docs/dashboard.html`
+- Evidence report: `docs/evidence-report.md`
+- Compliance audit: `docs/competition-compliance.md`
+
 ## Key Evidence Files
 
 - `docs/evidence-report.md`

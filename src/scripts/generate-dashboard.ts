@@ -2,6 +2,9 @@ import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname } from "node:path";
 
 const outputPath = "docs/dashboard.html";
+const repositoryUrl = "https://github.com/Quenine/solana-tx-sentinel";
+const publicArchitectureUrl =
+  "https://docs.google.com/document/d/1QQVLHkuINdQD3P4VSvLwluTAsynqgvGEfPt_vcSL5LI/edit?usp=sharing";
 
 const paths = {
   summary: "data/lifecycle/latest-evidence-summary.json",
@@ -175,6 +178,10 @@ function rawLink(path: string): string {
   return `<a href="../${escapeHtml(path)}">${escapeHtml(path)}</a>`;
 }
 
+function externalLink(url: string, label: string): string {
+  return `<a href="${escapeHtml(url)}">${escapeHtml(label)}</a>`;
+}
+
 function render(input: {
   summary: Summary | null;
   bundles: JsonObject[];
@@ -234,6 +241,9 @@ function render(input: {
     "No MEV or profitability claim is made."
   ];
   const files = [
+    externalLink(repositoryUrl, "GitHub repository"),
+    externalLink(publicArchitectureUrl, "Public architecture document"),
+    link("docs/dashboard.html", "docs/dashboard.html"),
     input.evidenceReportPresent ? link("docs/evidence-report.md", "docs/evidence-report.md") : "docs/evidence-report.md (missing)",
     link("docs/competition-compliance.md", "docs/competition-compliance.md"),
     input.architecturePresent ? link("docs/architecture.md", "docs/architecture.md") : "docs/architecture.md (missing)",
