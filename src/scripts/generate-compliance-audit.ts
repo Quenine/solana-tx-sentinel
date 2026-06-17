@@ -2,10 +2,13 @@ import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname } from "node:path";
 
 const reportPath = "docs/competition-compliance.md";
+const ARCHITECTURE_DOCUMENT_URL =
+  "https://docs.google.com/document/d/1QQVLHkuINdQD3P4VSvLwluTAsynqgvGEfPt_vcSL5LI/edit?usp=sharing";
 
 const files = {
   readme: "README.md",
   packageJson: "package.json",
+  license: "LICENSE",
   evidenceReport: "docs/evidence-report.md",
   latestSummary: "data/lifecycle/latest-evidence-summary.json",
   jitoBundles: "data/lifecycle/jito-bundles.jsonl",
@@ -167,7 +170,7 @@ function inventoryLine(path: string, text: string | null, lines?: JsonObject[] |
   return `- ${path}: ${present ? "present" : "missing"}${count}`;
 }
 
-function readiness(rows: RequirementRow[]): "ready with documented risks" | "partial" | "not ready" {
+function readiness(rows: RequirementRow[]): "ready with documented constraints" | "partial" | "not ready" {
   const missing = rows.filter((row) => row.status === "missing").length;
   const satisfied = rows.filter((row) => row.status === "satisfied").length;
 
@@ -175,12 +178,13 @@ function readiness(rows: RequirementRow[]): "ready with documented risks" | "par
     return "partial";
   }
 
-  return satisfied >= 10 ? "ready with documented risks" : "partial";
+  return satisfied >= 10 ? "ready with documented constraints" : "partial";
 }
 
 function renderReport(input: {
   readme: string | null;
   packageJson: string | null;
+  license: string | null;
   evidenceReport: string | null;
   summary: EvidenceSummary | null;
   bundles: JsonObject[] | null;
@@ -195,10 +199,11 @@ function renderReport(input: {
   const stream = input.streamSummary;
   const yellowstoneSatisfied = stream?.source === "yellowstone" && (stream.captured_count ?? 0) > 0;
   const scoredDecisions = countScoredDecisions(input.decisions);
-  const architecturePartial = hasText(input.readme, /Architecture Overview/i);
+  const architectureLocalDocPresent = input.evidenceReport !== null && hasText(input.readme, /Architecture Overview/i);
+  const architectureUrlPresent = ARCHITECTURE_DOCUMENT_URL.length > 0;
   const readmeQuestionsSatisfied = hasText(input.readme, /README Judging Questions/i);
+  const openSourcePresent = input.packageJson !== null && input.readme !== null && input.license !== null;
   const openSourcePartial = input.packageJson !== null && input.readme !== null;
-  const licenseMissing = hasText(input.readme, /No license file is currently included/i);
   const leaderEvidence = (input.observedLeaders?.observed_leader_count ?? 0) > 0;
   const lifecycleEvidence = hasLifecycleStages(input.bundles);
   const jitoOnly = hasJitoOnly(input.bundles);
@@ -209,12 +214,12 @@ function renderReport(input: {
   const rows: RequirementRow[] = [
     {
       requirement: "Architecture design document",
-      status: architecturePartial ? "partial" : "missing",
-      evidenceFiles: [files.readme],
-      command: "open README.md",
-      notes: architecturePartial
-        ? "README includes an architecture overview; separate public architecture document URL is still pending."
-        : "No architecture overview found."
+      status: architectureUrlPresent ? "satisfied" : architectureLocalDocPresent ? "partial" : "missing",
+      evidenceFiles: [`Public architecture document: ${ARCHITECTURE_DOCUMENT_URL}`, "docs/architecture.md", files.readme],
+      command: "open docs/architecture.md",
+      notes: architectureUrlPresent
+        ? "Public architecture document is available and local architecture markdown is included."
+        : "Local architecture overview exists; public document URL is not configured."
     },
     {
       requirement: "Live slot and leader data",
@@ -304,10 +309,10 @@ function renderReport(input: {
     },
     {
       requirement: "Open-source setup",
-      status: openSourcePartial && licenseMissing ? "partial" : openSourcePartial ? "satisfied" : "missing",
-      evidenceFiles: [files.readme, files.packageJson],
+      status: openSourcePresent ? "satisfied" : openSourcePartial ? "partial" : "missing",
+      evidenceFiles: [files.readme, files.packageJson, files.license],
       command: "pnpm install && pnpm build && pnpm test",
-      notes: licenseMissing ? "Project setup is documented; license file is not included." : "Project setup is documented."
+      notes: openSourcePresent ? "Project setup is documented and MIT license file is present." : "Project setup is documented; license file is missing."
     },
     {
       requirement: "Stream evidence",
@@ -325,10 +330,10 @@ function renderReport(input: {
     }
   ];
 
-  const risks = [
-    "Architecture document public URL still pending if not created yet.",
+  const constraints = [
     "Final Jito bundle evidence was collected on Jito testnet; organizer confirmation may be useful if they strictly require devnet/mainnet.",
-    "Native Yellowstone client subscribe was unstable, so real Yellowstone evidence was captured through grpcurl against geyser.Geyser/Subscribe."
+    "Native Yellowstone client subscribe was unstable, so real Yellowstone evidence was captured through grpcurl against geyser.Geyser/Subscribe.",
+    "No MEV/profitability claim is made."
   ];
 
   return [
@@ -342,7 +347,8 @@ function renderReport(input: {
     `- Main strengths: ${completed}/10 bundle session completed, ${failureTypesList.length} controlled failure classifications, Yellowstone stream evidence source=${display(
       stream?.source
     )} transport=${display(stream?.transport)} captured_count=${display(stream?.captured_count)}.`,
-    `- Remaining risks: ${risks.join(" ")}`,
+    `- Public architecture document: ${ARCHITECTURE_DOCUMENT_URL}`,
+    `- Remaining documented constraints: ${constraints.join(" ")}`,
     "",
     "## Requirement Matrix",
     "",
@@ -368,11 +374,10 @@ function renderReport(input: {
     "",
     "## Known Risks",
     "",
-    ...risks.map((risk) => `- ${risk}`),
+    ...constraints.map((constraint) => `- ${constraint}`),
     "",
     "## Next Actions",
     "",
-    "- Publish architecture document.",
     "- Final README polish.",
     "- Final demo walkthrough.",
     "- Final submission checklist.",
@@ -383,6 +388,7 @@ function renderReport(input: {
 async function main(): Promise<void> {
   const readme = await readOptionalText(files.readme);
   const packageJson = await readOptionalText(files.packageJson);
+  const license = await readOptionalText(files.license);
   const evidenceReport = await readOptionalText(files.evidenceReport);
   const summary = await readOptionalJson<EvidenceSummary>(files.latestSummary);
   const bundles = await readJsonLines(files.jitoBundles);
@@ -395,6 +401,7 @@ async function main(): Promise<void> {
   const report = renderReport({
     readme,
     packageJson,
+    license,
     evidenceReport,
     summary,
     bundles,

@@ -88,7 +88,7 @@ pnpm report:evidence
 ```text
 NETWORK=testnet
 JITO_BLOCK_ENGINE_URL=https://testnet.block-engine.jito.wtf
-SLOT_STREAM_SOURCE=solana_ws
+SLOT_STREAM_SOURCE=yellowstone_grpcurl
 BUNDLE_LAYOUT=combined_tip_instruction
 EVIDENCE_PROFILE=final
 ENABLE_SUBMISSION_TIMING=true
@@ -174,4 +174,4 @@ Failure Classifier -> Scored Reasoning Agent -> Recovery Runner
 
 ## License
 
-No license file is currently included.
+MIT. See `LICENSE`.

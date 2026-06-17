@@ -1,24 +1,28 @@
+# dependencies and build output
 node_modules/
 .pnpm-store/
 dist/
 coverage/
-.env
-.env.local
-*.log
-data/lifecycle/*
-!data/lifecycle/.gitkeep
-.DS_Store
-Thumbs.db
 
 # local secrets
 .env
 .env.*
 !.env.example
-keys
 keys/
 *.pem
 *.key
+*.log
 
-# dependencies
-node_modules
-.pnpm-store
+# local OS files
+.DS_Store
+Thumbs.db
+
+# lifecycle data is ignored by default; final judge evidence is allow-listed below
+data/lifecycle/*
+!data/lifecycle/.gitkeep
+!data/lifecycle/latest-evidence-summary.json
+!data/lifecycle/jito-bundles.jsonl
+!data/lifecycle/jito-bundle-failures.jsonl
+!data/lifecycle/autonomous-recovery.jsonl
+!data/lifecycle/agent-decisions.jsonl
+!data/lifecycle/observed-jito-leaders.json

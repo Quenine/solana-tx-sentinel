@@ -1,18 +1,19 @@
 # Competition Compliance Audit
 
-Generated at: 2026-06-17T20:23:48.445Z
+Generated at: 2026-06-17T20:39:54.603Z
 
 ## Summary
 
-- Overall readiness level: ready with documented risks
+- Overall readiness level: ready with documented constraints
 - Main strengths: 10/10 bundle session completed, 3 controlled failure classifications, Yellowstone stream evidence source=yellowstone transport=grpcurl captured_count=25.
-- Remaining risks: Final Jito bundle evidence was collected on Jito testnet. Native Yellowstone client subscribe was unstable, so real Yellowstone evidence was captured through grpcurl against geyser.Geyser/Subscribe.
+- Public architecture document: https://docs.google.com/document/d/1QQVLHkuINdQD3P4VSvLwluTAsynqgvGEfPt_vcSL5LI/edit?usp=sharing
+- Remaining documented constraints: Final Jito bundle evidence was collected on Jito testnet. Native Yellowstone client subscribe was unstable, so real Yellowstone evidence was captured through grpcurl against geyser.Geyser/Subscribe. No MEV/profitability claim is made.
 
 ## Requirement Matrix
 
 | Requirement | Status | Evidence files | Reproduction command | Notes |
 | --- | --- | --- | --- | --- |
-| Architecture design document | satisfied | README.md | open README.md | README includes an architecture overview; separate public architecture document URL is still pending. |
+| Architecture design document | satisfied | Public architecture document: https://docs.google.com/document/d/1QQVLHkuINdQD3P4VSvLwluTAsynqgvGEfPt_vcSL5LI/edit?usp=sharing, docs/architecture.md, README.md | open docs/architecture.md | Public architecture document is available and local architecture markdown is included. |
 | Live slot and leader data | satisfied | data/stream/latest-stream-evidence-summary.json, data/stream/slot-stream-evidence.jsonl, data/lifecycle/observed-jito-leaders.json | pnpm stream:capture && pnpm leaders:learn-jito | stream_source=yellowstone, transport=grpcurl, observed_leaders=2 |
 | Yellowstone/Geyser support | satisfied | data/stream/latest-stream-evidence-summary.json, data/stream/slot-stream-evidence.jsonl | SLOT_STREAM_SOURCE=yellowstone_grpcurl pnpm stream:capture | captured_count=25, transport=grpcurl |
 | Leader window detection | satisfied | data/lifecycle/observed-jito-leaders.json, data/lifecycle/jito-bundles.jsonl | pnpm leaders:learn-jito | observed_jito_leader_count=2 |
@@ -25,7 +26,7 @@ Generated at: 2026-06-17T20:23:48.445Z
 | At least 2 failure cases | satisfied | data/lifecycle/jito-bundle-failures.jsonl | pnpm bundle:fault-expired && pnpm bundle:fault-compute | bundle_failure:invalid_tip_account, compute_exceeded, expired_blockhash |
 | AI decision agent | satisfied | data/lifecycle/agent-decisions.jsonl | pnpm agent:diagnose | scored_policy_decisions=3 |
 | README questions | satisfied | README.md | open README.md | README includes answers for latency, blockhash commitment, and skipped Jito leader handling. |
-| Open-source setup | partial | README.md, package.json | pnpm install && pnpm build && pnpm test | Project setup is documented; license file is not included. |
+| Open-source setup | satisfied | README.md, package.json, LICENSE | pnpm install && pnpm build && pnpm test | Project setup is documented and MIT license file is present. |
 | Stream evidence | satisfied | data/stream/latest-stream-evidence-summary.json, data/stream/slot-stream-evidence.jsonl | pnpm stream:capture | source=yellowstone, transport=grpcurl, captured_count=25 |
 | Commitment-stage tracking | satisfied | data/lifecycle/jito-bundles.jsonl, docs/evidence-report.md | pnpm evidence:bundles 10 && pnpm report:evidence | Evidence includes processed, confirmed, finalized lifecycle timing where observable. |
 
@@ -43,13 +44,6 @@ Generated at: 2026-06-17T20:23:48.445Z
 
 ## Known Risks
 
-- Architecture document public URL still pending if not created yet.
-- Final Jito bundle evidence was collected on Jito testnet; organizer confirmation may be useful if they strictly require devnet/mainnet.
+- Final Jito bundle evidence was collected on Jito testnet.
 - Native Yellowstone client subscribe was unstable, so real Yellowstone evidence was captured through grpcurl against geyser.Geyser/Subscribe.
-
-## Next Actions
-
-- Publish architecture document.
-- Final README polish.
-- Final demo walkthrough.
-- Final submission checklist.
+- No MEV/profitability claim is made.

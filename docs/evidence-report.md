@@ -1,6 +1,6 @@
 # Solana Tx Sentinel Evidence Report
 
-Generated at: 2026-06-17T20:23:47.819Z
+Generated at: 2026-06-17T20:39:53.888Z
 
 ## Evidence Session
 
@@ -62,7 +62,7 @@ Generated at: 2026-06-17T20:23:47.819Z
 
 ## Failure Evidence Summary
 
-- Expired blockhash fault injection: not available
+- Expired blockhash fault injection: expired_blockhash recorded at 2026-06-06T18:12:55.599Z.
 - Autonomous retry recovery: recovered recorded at 2026-06-06T20:56:12.100Z.
 - Bundle failure classification: none recorded in the selected final evidence session.
 
