@@ -81,6 +81,7 @@ pnpm bundle:fault-compute
 pnpm bundle:fault-invalid-tip
 pnpm report:evidence
 ```
+For the controlled compute-exceeded fault only, set SUBMIT_BUNDLE_ON_SIMULATION_FAILURE=true when intentionally testing failed-simulation bundle behavior.
 
 ## Final Profile Config
 
